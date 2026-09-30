@@ -1,0 +1,932 @@
+{
+  "info": {
+    "_postman_id": "a98d3f11-92b1-477d-bb34-927189196b01",
+    "name": "Job Application Portal API",
+    "description": "Complete RESTful API collection for testing the Job Application Portal. Includes authentication, resume upload (Multer), job listings, and application tracking.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01. Authentication",
+      "item": [
+        {
+          "name": "Register Candidate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Register candidate - 201 Created (or 409 if candidate already exists)",
+                  "pm.test('Status is 201 Created or 409 Conflict', function () {",
+                  "    pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "    pm.test('success flag is true', function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "    pm.test('Token is present in response', function () {",
+                  "        const res = pm.response.json();",
+                  "        pm.expect(res.data).to.have.property('token');",
+                  "        pm.expect(res.data.token).to.be.a('string').and.not.empty;",
+                  "    });",
+                  "    pm.test('Password is NOT exposed in response body', function () {",
+                  "        const raw = pm.response.text();",
+                  "        pm.expect(raw).to.not.include('\"password\"');",
+                  "    });",
+                  "    pm.test('User object is present and has expected fields', function () {",
+                  "        const res = pm.response.json();",
+                  "        pm.expect(res.data.user).to.include.keys('_id', 'email', 'fullName', 'role');",
+                  "    });",
+                  "    const res = pm.response.json();",
+                  "    if (res.success && res.data && res.data.token) {",
+                  "        pm.collectionVariables.set('token', res.data.token);",
+                  "        console.log('Saved new JWT token');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Generate unique email for automated runner runs to avoid duplicate 409 conflict",
+                  "const timestamp = Date.now();",
+                  "const dynamicEmail = 'candidate_' + timestamp + '@example.com';",
+                  "pm.collectionVariables.set('candidateEmail', dynamicEmail);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"{{candidateEmail}}\",\n  \"password\": \"SecurePass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Registers a new candidate and returns candidate profile along with JWT token."
+          },
+          "response": []
+        },
+        {
+          "name": "Login Candidate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Check 7: Login with correct credentials — 200, token in response",
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "pm.test('success flag is true', function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Token is present in response', function () {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('token');",
+                  "    pm.expect(res.data.token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('accessToken is present in response', function () {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('accessToken');",
+                  "    pm.expect(res.data.accessToken).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('Password is NOT exposed in response body', function () {",
+                  "    const raw = pm.response.text();",
+                  "    pm.expect(raw).to.not.include('\"password\"');",
+                  "});",
+                  "pm.test('User object has expected fields', function () {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.user).to.include.keys('_id', 'email', 'fullName', 'role');",
+                  "});",
+                  "// Save token for subsequent requests",
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data && res.data.token) {",
+                  "    pm.collectionVariables.set('token', res.data.token);",
+                  "    console.log('JWT Token successfully updated in collection variable: token');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{candidateEmail}}\",\n  \"password\": \"SecurePass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in an existing candidate and automatically saves the JWT token into {{token}} collection variable."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Candidate Profile (Me)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Returns details of the currently authenticated candidate."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "pm.test('success flag is true', function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('User profile has email and fullName', function () {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.include.keys('_id', 'email', 'fullName');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02. Jobs",
+      "item": [
+        {
+          "name": "Get All Jobs (Auto-sets jobId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "pm.test('success flag is true', function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Response contains a jobs array', function () {",
+                  "    const res = pm.response.json();",
+                  "    const jobs = Array.isArray(res.data) ? res.data : (res.data && res.data.jobs);",
+                  "    pm.expect(jobs).to.be.an('array');",
+                  "});",
+                  "pm.test('Jobs list contains jobs', function () {",
+                  "    const res = pm.response.json();",
+                  "    const jobs = Array.isArray(res.data) ? res.data : (res.data && res.data.jobs || []);",
+                  "    pm.expect(jobs.length).to.be.at.least(1);",
+                  "});",
+                  "pm.test('Each job has _id, title, and company', function () {",
+                  "    const res = pm.response.json();",
+                  "    const jobs = Array.isArray(res.data) ? res.data : (res.data && res.data.jobs || []);",
+                  "    jobs.forEach(function (job) {",
+                  "        pm.expect(job).to.include.keys('_id', 'title', 'company');",
+                  "    });",
+                  "});",
+                  "// Save first jobId for subsequent requests",
+                  "const res = pm.response.json();",
+                  "const jobs = Array.isArray(res.data) ? res.data : (res.data && res.data.jobs || []);",
+                  "if (res.success && jobs.length > 0) {",
+                  "    pm.collectionVariables.set('jobId', jobs[0]._id);",
+                  "    console.log('Saved jobId:', jobs[0]._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/jobs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs"
+              ]
+            },
+            "description": "Fetches all active job openings and automatically stores the first job ID in {{jobId}} for easy testing."
+          },
+          "response": []
+        },
+        {
+          "name": "Search & Filter Jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/jobs?search=Node&jobType=Full-time",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Node"
+                },
+                {
+                  "key": "jobType",
+                  "value": "Full-time"
+                }
+              ]
+            },
+            "description": "Filters job listings by search term and employment type."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "pm.test('success flag is true', function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Filtered jobs list is returned', function () {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.jobs).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Job Details by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Check 11: GET /api/v1/jobs/{first job _id} — 200",
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "pm.test('success flag is true', function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Job data has _id, title, company, and status', function () {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.include.keys('_id', 'title', 'company', 'status');",
+                  "});",
+                  "pm.test('Returned job _id matches requested jobId', function () {",
+                  "    const res = pm.response.json();",
+                  "    const jobId = pm.collectionVariables.get('jobId');",
+                  "    if (jobId) {",
+                  "        pm.expect(res.data._id).to.eql(jobId);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/jobs/{{jobId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "{{jobId}}"
+              ]
+            },
+            "description": "Fetches details of a specific job by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Create New Job Listing",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Lead Cloud Architect\",\n  \"company\": \"Enterprise Cloud Global\",\n  \"location\": \"Remote\",\n  \"jobType\": \"Full-time\",\n  \"description\": \"Lead our cloud transformation initiative with scalable AWS and Kubernetes infrastructures.\",\n  \"requirements\": [\"7+ years cloud experience\", \"AWS Solutions Architect certified\", \"Terraform & Kubernetes\"],\n  \"salary\": \"$150,000 - $180,000 / year\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/jobs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs"
+              ]
+            },
+            "description": "Creates a new job opening (Protected endpoint)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "pm.test('success flag is true', function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Created job has _id and title', function () {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.include.keys('_id', 'title', 'company');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03. Resumes (Multer Upload)",
+      "item": [
+        {
+          "name": "Upload Resume (Multer Multipart)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "resume",
+                  "type": "file",
+                  "description": "Select a .pdf, .doc, or .docx file (max 5MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/resumes/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "resumes",
+                "upload"
+              ]
+            },
+            "description": "Uploads candidate resume via Multer. Stores file in uploads/resumes and updates candidate profile."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK or 400 (if no file selected in runner)', function () {",
+                  "    pm.expect([200, 400]).to.include(pm.response.code);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data && res.data.resume) {",
+                  "    pm.test('Resume URL is returned', function () {",
+                  "        pm.expect(res.data.resume).to.be.a('string');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get My Uploaded Resume",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/resumes/my-resume",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "resumes",
+                "my-resume"
+              ]
+            },
+            "description": "Retrieves the currently saved resume URL and details for the logged-in candidate."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK or 404', function () {",
+                  "    pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04. Job Applications",
+      "item": [
+        {
+          "name": "Apply for Job (Using Profile Resume)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobId\": \"{{jobId}}\",\n  \"coverNote\": \"I have 4+ years of hands-on experience building scalable Node.js microservices and would love to contribute to your team!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications"
+              ]
+            },
+            "description": "Submits a job application using the candidate's existing uploaded resume."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201 Created or 400 (if already applied)', function () {",
+                  "    pm.expect([200, 201, 400]).to.include(pm.response.code);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data && res.data._id) {",
+                  "    pm.collectionVariables.set('applicationId', res.data._id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Apply for Job (With Direct Resume Upload)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "jobId",
+                  "value": "{{jobId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "coverNote",
+                  "value": "Direct application with new resume attached.",
+                  "type": "text"
+                },
+                {
+                  "key": "resume",
+                  "type": "file",
+                  "description": "Attach a fresh PDF/DOCX resume file"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications"
+              ]
+            },
+            "description": "Submits a job application with a fresh resume file uploaded directly in the request."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201 Created or 400 (if already applied/no file)', function () {",
+                  "    pm.expect([200, 201, 400]).to.include(pm.response.code);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get My Submitted Applications (Auto-sets applicationId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "pm.test('success flag is true', function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Applications array returned', function () {",
+                  "    const res = pm.response.json();",
+                  "    const apps = Array.isArray(res.data) ? res.data : (res.data && res.data.applications || []);",
+                  "    pm.expect(apps).to.be.an('array');",
+                  "    if (apps.length > 0) {",
+                  "        pm.collectionVariables.set('applicationId', apps[0]._id);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/my-applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "my-applications"
+              ]
+            },
+            "description": "Fetches all applications submitted by the logged-in candidate, including current status."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Single Application Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/{{applicationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "{{applicationId}}"
+              ]
+            },
+            "description": "Fetches full details of a specific job application."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK or 400/404', function () {",
+                  "    pm.expect([200, 400, 404]).to.include(pm.response.code);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05. Health & Root",
+      "item": [
+        {
+          "name": "API Welcome Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Root endpoint returning welcome message, version, and API route directory."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "pm.test('success flag is true', function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/healthcheck",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "healthcheck"
+              ]
+            },
+            "description": "Health check route returning server uptime and status."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "pm.test('success flag is true', function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Health status is OK', function () {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.status).to.eql('OK');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "jobId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "applicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "candidateEmail",
+      "value": "john.doe@example.com",
+      "type": "string"
+    }
+  ]
+}
