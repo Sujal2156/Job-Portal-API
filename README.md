@@ -18,7 +18,6 @@ A RESTful API built with Node.js, Express.js, MongoDB, Multer, and JWT authentic
    - [Job Endpoints](#3-job-endpoints)
    - [Application Endpoints](#4-application-endpoints)
 7. [Postman Collection & Testing](#postman-collection--testing)
-8. [Deployment Guide (Render)](#deployment-guide-render)
 
 ---
 
@@ -458,29 +457,7 @@ A ready-to-use Postman collection is included in the root directory:
 ### Usage:
 1. Open Postman and import `Job_Portal_API.postman_collection.json`.
 2. The collection uses variables:
-   - `baseUrl`: default `http://localhost:5000` (or your live Render URL)
-   - `token`: automatically populated when running Register or Login
-   - `jobId`: automatically populated when running Get All Jobs
-   - `applicationId`: automatically populated when running Get My Applications
-
----
-
-## Deployment Guide (Render)
-
-1. Push your code to a GitHub repository.
-2. Sign in to Render (https://dashboard.render.com/) and create a New Web Service.
-3. Connect your repository.
-4. Settings:
-   - Runtime: Node
-   - Build Command: `npm install`
-   - Start Command: `npm start`
-   - Plan: Free
-5. Environment Variables:
-   - `MONGODB_URI`: Your MongoDB Atlas connection string
-   - `ACCESS_TOKEN_SECRET`: A secure random string
-   - `REFRESH_TOKEN_SECRET`: A secure random string
-   - `CLOUDINARY_CLOUD_NAME`: Your Cloudinary cloud name
-   - `CLOUDINARY_API_KEY`: Your Cloudinary API key
-   - `CLOUDINARY_API_SECRET`: Your Cloudinary API secret
-
-> Note: On Render's free tier, the web service spins down after periods of inactivity. The first request may take 30 to 50 seconds while the server boots up.
+   - `baseUrl`: `https://job-portal-api-kr3j.onrender.com` (or `http://localhost:5000` for local testing)
+   - `token`: automatically set upon Register/Login
+   - `jobId`: automatically set when browsing jobs
+   - `applicationId`: automatically set upon job application
