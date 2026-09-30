@@ -1,6 +1,6 @@
 # Job Application Portal - RESTful API
 
-Live API URL: https://your-app.onrender.com
+Live API URL: https://job-portal-api-kr3j.onrender.com
 
 A RESTful API built with Node.js, Express.js, MongoDB, Multer, and JWT authentication. Candidates can register, log in, upload resumes, browse job listings, submit job applications, and track application statuses.
 
